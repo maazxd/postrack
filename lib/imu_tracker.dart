@@ -4,35 +4,32 @@ import 'dart:math' as math;
 import 'matrix3.dart';
 
 class IMUTracker {
-  // Public properties
+  
   int stepCount = 0;
   Vector3 position = Vector3.zero();
   Vector3 velocity = Vector3.zero();
   Vector3 orientation = Vector3.zero();
 
-  // Sensor calibration values
+
   Vector3 _accelBias = Vector3.zero();
   final Vector3 _gyroBias = Vector3.zero();
   bool _isCalibrated = false;
 
-  // Constants for step detection
   static const double _stepThreshold = 10.0;
   static const double _timeThreshold = 250.0;
   static const int _calibrationSamples = 100;
   static const double _lowPassAlpha = 0.1;
   static const double _gravityMagnitude = 9.81;
 
-  // State variables
   double _lastStepTime = 0;
   Vector3 _filteredAccel = Vector3.zero();
   final List<Vector3> _calibrationAccelData = [];
   final List<Vector3> _calibrationGyroData = [];
 
-  // Error margins
   static const double _maxAcceleration = 50.0; // m/s²
   static const double _maxAngularVelocity = 20.0; // rad/s
 
-  // Kalman filter matrices
+  
   late KalmanMatrix _stateMatrix;
   late KalmanMatrix _errorCovariance;
   final KalmanMatrix _processNoise;
@@ -62,19 +59,19 @@ class IMUTracker {
 
   Vector3 _applyKalmanFilter(Vector3 measurement, double dt) {
     try {
-      // Update transition matrix
+      
       _transitionMatrix.setEntry(0, 1, dt);
       _transitionMatrix.setEntry(0, 2, 0.5 * dt * dt);
       _transitionMatrix.setEntry(1, 2, dt);
 
-      // Predict step
+      
       _stateMatrix = _transitionMatrix * _stateMatrix;
 
       _errorCovariance =
           _transitionMatrix * _errorCovariance * _transitionMatrix.transpose() +
               _processNoise;
 
-      // Measurement update
+      
       final measurementMatrix = KalmanMatrix.fromList([
         measurement.x,
         0.0,
@@ -92,7 +89,7 @@ class IMUTracker {
 
       final kalmanGain = _calculateKalmanGain();
 
-      // Update state
+      
       _stateMatrix = _stateMatrix + (kalmanGain * innovation);
 
       return Vector3(_stateMatrix.get(0, 0), _stateMatrix.get(1, 0),
@@ -142,7 +139,7 @@ class IMUTracker {
   void _processGyroscope(GyroscopeEvent event) {
     var gyroData = Vector3(event.x, event.y, event.z);
 
-    // Apply bias correction and threshold
+    
     gyroData -= _gyroBias;
     if (gyroData.length > _maxAngularVelocity) {
       return;
@@ -197,7 +194,7 @@ class IMUTracker {
   void _updatePosition(Vector3 accel) {
     const dt = 0.01;
 
-    // Remove gravity component
+    
     final gravityCompensated = _removeGravity(accel);
 
     // Update velocity with drift compensation
@@ -262,7 +259,7 @@ class IMUTracker {
     _accelBias = _calibrationAccelData.reduce((a, b) => a + b) /
         _calibrationAccelData.length.toDouble();
 
-    // Remove gravity from acceleration bias
+    
     _accelBias.z -= _gravityMagnitude;
 
     // Clear calibration data
@@ -274,7 +271,7 @@ class IMUTracker {
     _filteredAccel = Vector3.zero();
   }
 
-  // Public method to force recalibration
+
   void recalibrate() {
     _isCalibrated = false;
     _calibrationAccelData.clear();
